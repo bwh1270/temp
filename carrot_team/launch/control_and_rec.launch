@@ -1,0 +1,4 @@
+<launch>
+    <node pkg ="carrot_team" type="control.py" name="control" output="screen"/>
+    <node pkg ="carrot_team" type="sub_img.py" name="sub_img"/>
+</launch>
