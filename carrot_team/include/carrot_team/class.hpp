@@ -51,6 +51,8 @@ namespace AIMS {
         void get_current_pos(float *current_position);
 
         void set_zoffset_yaw(float *target_poi_yaw);
+
+        void start_moving(bool *flag);
     };
 }
 
@@ -61,12 +63,14 @@ class Depth
     uint height_;
     uint width_;
     uint depth_size_;
-    ros::Subscriber depth_sub_;
     double depth_array_[640*480];
+    ros::Subscriber depth_sub_;
     
     public:  
     Depth(ros::NodeHandle *nh);
 
     void depth_sub_callback(const std_msgs::Float64MultiArray::ConstPtr &msg);
+
+    int is_obstacle();
 };
 #endif

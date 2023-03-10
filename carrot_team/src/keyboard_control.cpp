@@ -1,5 +1,6 @@
 #include "ros/ros.h"
 #include "trajectory_msgs/MultiDOFJointTrajectoryPoint.h"
+#include "carrot_team/orientation.hpp"
 #include <iostream> // std
 #include <cstring>	// memcpy
 #include <signal.h>
@@ -17,7 +18,11 @@
 #define KEYCODE_LEFT 0x44
 #define KEYCODE_D 0x64
 #define KEYCODE_F 0x66
+#define KEYCODE_A 0x61
+#define KEYCODE_S 0x73
 #define KEYCODE_Q 0x71
+
+#define PI = 3.14159265358979323846;
 
 class KeyboardReader
 {
@@ -89,6 +94,14 @@ public:
 					*c = KEYCODE_F;
 					return;
 				}
+				else if (buffer.Event.KeyEvent.wVirtualKeyCode == 0x41)
+				{
+					*c = KEYCODE_A;
+				}
+				else if (buffer.Event.KeyEvent.wVirtualKeyCode == 0x53)
+				{
+					*c = KEYCODE_S;
+				}
 				else if (buffer.Event.KeyEvent.wVirtualKeyCode == 0x51)
 				{
 					*c = KEYCODE_Q;
@@ -126,11 +139,12 @@ public:
 
 private:
 	ros::NodeHandle _nh;
-	float _x, _y, _z; // yaw ?
+	float _x, _y, _z;
+	EulerAngles _angle;
 	ros::Publisher _trajectory_point_pub;
 };
 
-TeleopDrone::TeleopDrone() : _x(10.0), _y(2.0), _z(2.0)
+TeleopDrone::TeleopDrone() : _x(10.0), _y(2.0), _z(2.0), _angle.yaw(0), _angle.roll(0), _angle.pitch(0)
 {
 	_trajectory_point_pub = _nh.advertise<trajectory_msgs::MultiDOFJointTrajectoryPoint>("red/position_hold/trajectory", 1000);
 }
@@ -153,7 +167,8 @@ void TeleopDrone::keyLoop()
 	puts("Use arrow keys to move the drone. 'q' to quit.");
 	puts("uparrow:    +1 in y axes    |    downarrow:  -1 in y axes");
 	puts("rightarrow: +1 in x axes    |    leftarrow:  -1 in x axes");
-	puts("keyboard D: +1 in z axes    |    keyboard D: -1 in z axes");
+	puts("keyboard F: +1 in z axes    |    keyboard D: -1 in z axes");
+	puts("keyboard S: +30deg in yaw   |    keyboard A: -30deg in yaw");
 	for (;;)
 	{
 		// get the next event from the keyboard
@@ -193,19 +208,30 @@ void TeleopDrone::keyLoop()
 			dirty = true;
 			break;
 		case KEYCODE_D:
-			ROS_INFO("Z: +1[m]");
-			_z += 1;
-			dirty = true;
-			break;
-		case KEYCODE_F:
 			ROS_INFO("Z: -1[m]");
 			_z += -1;
 			dirty = true;
 			break;
+		case KEYCODE_F:
+			ROS_INFO("Z: +1[m]");
+			_z += +1;
+			dirty = true;
+			break;
+		case KEYCODE_A:
+			ROS_INFO("Yaw: -30[deg]");
+			_angle.yaw -= PI/6;
+			dirty = true;
+			break;
+		case KEYCODE_S:
+			ROS_INFO("Yaw: +30[deg]");
+			_angle.yaw += PI/6;
 		case KEYCODE_Q:
 			ROS_INFO("quit");
 			return;
 		}
+
+		Quaternion q;
+		q = ToQuaternion(_angle);
 
 		trajectory_msgs::MultiDOFJointTrajectoryPoint point_msg;
 		point_msg.transforms.resize(1);
@@ -215,7 +241,11 @@ void TeleopDrone::keyLoop()
 		point_msg.transforms[0].translation.x = _x;
 		point_msg.transforms[0].translation.y = _y;
 		point_msg.transforms[0].translation.z = _z;
-
+		point_msg.transforms[0].rotation.x = q.x;
+		point_msg.transforms[0].rotation.y = q.y;
+		point_msg.transforms[0].rotation.z = q.z;
+		point_msg.transforms[0].rotation.w = q.w;
+		
 		if (dirty == true)
 		{
 			_trajectory_point_pub.publish(point_msg);

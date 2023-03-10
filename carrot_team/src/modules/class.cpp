@@ -106,6 +106,8 @@ void AIMS::Vehicle::set_zoffset_yaw(float *target_poi_yaw) {
     q = ToQuaternion(angle);
 
     geometry_msgs::PoseStamped zyaw_pose_msg;
+    zyaw_pose_msg.pose.position.x = current_position_[0];
+    zyaw_pose_msg.pose.position.y = current_position_[1];
     zyaw_pose_msg.pose.position.z = target_poi_yaw[2];
     zyaw_pose_msg.pose.orientation.w = q.w;
     zyaw_pose_msg.pose.orientation.x = q.x;
@@ -115,13 +117,18 @@ void AIMS::Vehicle::set_zoffset_yaw(float *target_poi_yaw) {
     ROS_INFO("Setting zoffset and yaw to target");
 }
 
+void AIMS::Vehicle::start_moving(bool *flag) {
+    *flag = true;
+}
+
+
 
 Depth::Depth(ros::NodeHandle *nh) {
     height_ = 640;
     width_  = 480;
     depth_size_ = (640*480);
     for (int i=0; i<depth_size_; ++i) { depth_array_[i] = 0; }
-    depth_sub_ = nh->subscribe("/red/camera/depth/image_raw", 1000, &Depth::depth_sub_callback, this);
+    depth_sub_ = nh->subscribe("/red/camera/depth/image_raw", 1000, &Depth::depth_sub_callback, this);  
 }
 
 void Depth::depth_sub_callback(const std_msgs::Float64MultiArray::ConstPtr &msg) {
@@ -129,4 +136,35 @@ void Depth::depth_sub_callback(const std_msgs::Float64MultiArray::ConstPtr &msg)
         depth_array_[i] = msg->data[i];
     }
     ROS_INFO("(320, 240): [%f]", depth_array_[320*240]);
+}
+
+int Depth::is_obstacle() {
+    int vertical_index_arr[7] = {120, 145, 165, 180, 240, 300, 360};
+    int idx = 0;
+    int close = 0;
+    int too_close = 0;
+
+    for (int i=0; i<7; ++i) {
+        for (int j=0; j<7; ++j) {
+            if (i==3) {
+                if ((j>=1) && (j<=5)) {
+                    idx = (100*j+1) + ((vertical_index_arr[i]-1)*639);
+                }
+            } 
+            else {
+                idx = (100*j+1) * vertical_index_arr[i];
+            }
+
+            // 1: need to avoid   2: danger
+            if (depth_array_[idx] < 0.1) {
+                return 1;
+            }
+            else if (depth_array_[idx] < 1) {
+                return 2;
+            }
+        }
+    }
+}
+
+void Depth::permission_to_go() {
 }

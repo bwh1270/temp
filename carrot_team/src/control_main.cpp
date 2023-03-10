@@ -17,10 +17,13 @@ int main(int argc, char **argv)
     bool where = true;
     float current_position[3];  // x, y, z
     float target_poi_yaw[4];    // x, y, z, yaw
+    bool willing_to_go = false; // flag which represents vehicle's just moving to target poi
+    int obs_flag = 0            // flag 0: can go   1: need to avoid    2: danger
 
-    AIMS::Vehicle carrot_vehicle = AIMS::Vehicle(&nh);
-    Target_POI target_poi = Target_POI(&nh);
-    Depth depth = Depth(&nh);
+    AIMS::Vehicle carrot_vehicle(&nh);)
+    Target_POI target_poi(&nh);
+    Depth depth(&nh);
+    
     ros::Rate rate(1);
     while (ros::ok()) {
         if (where) {
@@ -31,8 +34,13 @@ int main(int argc, char **argv)
             target_poi.find_min_range(current_position);
             target_poi.get_target_poi(target_poi_yaw);
 
-            // Control
+            // Set the zoffset & yaw, and I'm ready to move
             carrot_vehicle.set_zoffset_yaw(target_poi_yaw);
+            carrot_vehicle.start_moving(&willing_to_go);
+
+            // Do obstacle exist?
+            obs_flag = depth.is_obstacle();
+
             where = false;
         }
         ros::spinOnce();
