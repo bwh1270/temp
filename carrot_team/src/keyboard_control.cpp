@@ -228,6 +228,8 @@ void TeleopDrone::keyLoop()
 		case KEYCODE_S:
 			ROS_INFO("Yaw: +30[deg]");
 			_angle.yaw += PI/6;
+			dirty = true;
+			break;
 		case KEYCODE_Q:
 			ROS_INFO("quit");
 			return;

@@ -41,7 +41,7 @@ int main(int argc, char **argv)
             // Now, vehicle starts moving
             if (willing_to_go) {
                 while (1) {
-                    obstacle_flag = depth.does_obstacle_exist();
+                    depth.does_obstacle_exist(&obstacle_flag);
 
                     if (obstacle_flag == 0) {
                         carrot_vehicle.set_xyoffset(target_poi_yaw);

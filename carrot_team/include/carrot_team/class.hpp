@@ -85,6 +85,6 @@ class Depth
 
     void depth_sub_callback(const std_msgs::Float64MultiArray::ConstPtr &msg);
 
-    int does_obstacle_exist();
+    void does_obstacle_exist(int *obstacle_flag);
 };
 #endif

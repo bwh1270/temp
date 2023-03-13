@@ -238,7 +238,7 @@ void Depth::depth_sub_callback(const std_msgs::Float64MultiArray::ConstPtr &msg)
     ROS_INFO("(320, 240): [%f]", depth_array_[320*240]);
 }
 
-int Depth::does_obstacle_exist() {
+void Depth::does_obstacle_exist(int *obstacle_flag) {
     int vertical_index_arr[7] = {120, 145, 165, 180, 240, 300, 360};
     int idx = 0;
 
@@ -255,13 +255,13 @@ int Depth::does_obstacle_exist() {
 
             // 0: you can go   1: need to avoid   2: danger
             if (depth_array_[idx] < 0.3) {
-                return 1;
+                *obstacle_flag = 1;
             }
             else if (depth_array_[idx] < 1) {
-                return 2;
+                *obstacle_flag = 2;
             }
             else {
-                return 0;
+                *obstacle_flag = 0;
             }
         }
     }
