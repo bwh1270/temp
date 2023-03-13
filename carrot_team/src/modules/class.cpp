@@ -77,19 +77,23 @@ void Target_POI::get_target_poi(float *target_poi_yaw) {
 
 
 AIMS::Vehicle::Vehicle(ros::NodeHandle *nh) {
-    current_position_[0] = 0;
-    current_position_[1] = 0;
-    current_position_[2] = 0;
+    for (int i=0; i<3; ++i) { current_position_[i] = 0; }
+    for (int i=0; i<4; ++i) { current_orientation_[i] = 0;}
 
-    pos_sub_ = nh->subscribe("/red/pose", 100, &AIMS::Vehicle::pos_sub_callback, this);
+    pos_sub_ = nh->subscribe("/red/pose", 100, &AIMS::Vehicle::pose_sub_callback, this);
 
     zyaw_pub_ = nh->advertise<geometry_msgs::PoseStamped>("/red/tracker/input_pose", 10);
+    xy_pub_   = nh->advertise<geometry_msgs::PoseStamped>("/red/tracker/input_pose", 10);
 }
 
-void AIMS::Vehicle::pos_sub_callback(const geometry_msgs::PoseStamped::ConstPtr &msg) {
+void AIMS::Vehicle::pose_sub_callback(const geometry_msgs::PoseStamped::ConstPtr &msg) {
     current_position_[0] = msg->pose.position.x;
     current_position_[1] = msg->pose.position.y;
     current_position_[2] = msg->pose.position.z;
+    current_orientation_[0] = msg->pose.orientation.x;
+    current_orientation_[1] = msg->pose.orientation.y;
+    current_orientation_[2] = msg->pose.orientation.z;
+    current_orientation_[3] = msg->pose.orientation.w;
 }
 
 void AIMS::Vehicle::get_current_pos(float *current_position) {
@@ -121,6 +125,102 @@ void AIMS::Vehicle::start_moving(bool *flag) {
     *flag = true;
 }
 
+void AIMS::Vehicle::set_xyoffset(float *target_poi_yaw) {
+
+    geometry_msgs::PoseStamped xy_pose_msg;
+    xy_pose_msg.pose.position.x = target_poi_yaw[0];
+    xy_pose_msg.pose.position.x = target_poi_yaw[1];
+    xy_pose_msg.pose.position.x = target_poi_yaw[2];
+    xy_pub_.publish(xy_pose_msg);
+    ROS_INFO("Setting x,y offset");
+}
+
+void AIMS::Vehicle::hovering() {
+    geometry_msgs::PoseStamped xyz_pose_msg;
+    xyz_pose_msg.pose.position.x = current_position_[0];
+    xyz_pose_msg.pose.position.y = current_position_[1];
+    xyz_pose_msg.pose.position.z = current_position_[2];
+    xy_pub_.publish(xyz_pose_msg);
+    ROS_INFO("hovering");
+}
+
+void AIMS::Vehicle::go_left() {
+    Quaternion _q;
+    EulerAngles _angle;
+    float left_vec_x, left_vec_y;
+    _q.x = current_orientation_[0];
+    _q.y = current_orientation_[1];
+    _q.z = current_orientation_[2];
+    _q.w = current_orientation_[3];
+
+    // move left about 1m w.r.t current orientation 
+    _angle = ToEulerAngles(_q); 
+    left_vec_x = cos(_angle.yaw) * 0 - sin(_angle.yaw) * 1;
+    left_vec_y = sin(_angle.yaw) * 0 + cos(_angle.yaw) * 1;
+
+    geometry_msgs::PoseStamped xy_pose_msg;
+    xy_pose_msg.pose.position.x = current_position_[0] + left_vec_x;
+    xy_pose_msg.pose.position.y = current_position_[1] + left_vec_y;
+    xy_pub_.publish(xy_pose_msg);
+    ROS_INFO("go left");
+}
+
+void AIMS::Vehicle::go_right() {
+    Quaternion _q;
+    EulerAngles _angle;
+    float right_vec_x, right_vec_y;
+    _q.x = current_orientation_[0];
+    _q.y = current_orientation_[1];
+    _q.z = current_orientation_[2];
+    _q.w = current_orientation_[3];
+
+    // move left about 1m w.r.t current orientation 
+    _angle = ToEulerAngles(_q); 
+    right_vec_x = cos(_angle.yaw) * 0 - sin(_angle.yaw) * (-1);
+    right_vec_y = sin(_angle.yaw) * 0 + cos(_angle.yaw) * (-1);
+
+    geometry_msgs::PoseStamped xy_pose_msg;
+    xy_pose_msg.pose.position.x = current_position_[0] + right_vec_x;
+    xy_pose_msg.pose.position.y = current_position_[1] + right_vec_y;
+    xy_pub_.publish(xy_pose_msg);
+    ROS_INFO("go right");
+}
+
+void AIMS::Vehicle::go_back() {
+    Quaternion _q;
+    EulerAngles _angle;
+    float back_vec_x, back_vec_y;
+    _q.x = current_orientation_[0];
+    _q.y = current_orientation_[1];
+    _q.z = current_orientation_[2];
+    _q.w = current_orientation_[3];
+
+    // move left about 1m w.r.t current orientation 
+    _angle = ToEulerAngles(_q); 
+    back_vec_x = cos(_angle.yaw) * (-1) - sin(_angle.yaw) * (0);
+    back_vec_y = sin(_angle.yaw) * (-1) + cos(_angle.yaw) * (0);
+
+    geometry_msgs::PoseStamped xy_pose_msg;
+    xy_pose_msg.pose.position.x = current_position_[0] + back_vec_x;
+    xy_pose_msg.pose.position.y = current_position_[1] + back_vec_y;
+    xy_pub_.publish(xy_pose_msg);
+    ROS_INFO("go right");
+}
+
+bool AIMS::Vehicle::arrived(float *target_poi_yaw) {
+    float delta_x, delta_y;
+    delta_x = abs(current_position_[0] - target_poi_yaw[0]);
+    delta_y = abs(current_position_[1] - target_poi_yaw[1]);
+
+    if ((delta_x < 0.01) && (delta_y < 0.01)) {
+        this->hovering();
+        // hovering();
+        ROS_INFO("Vehicle is arrived at the target POI");
+        // publish (iter, accurate or near, poi(x,y,z))
+        return true;
+    }
+    else { return false }
+}
 
 
 Depth::Depth(ros::NodeHandle *nh) {
@@ -138,11 +238,9 @@ void Depth::depth_sub_callback(const std_msgs::Float64MultiArray::ConstPtr &msg)
     ROS_INFO("(320, 240): [%f]", depth_array_[320*240]);
 }
 
-int Depth::is_obstacle() {
+int Depth::does_obstacle_exist() {
     int vertical_index_arr[7] = {120, 145, 165, 180, 240, 300, 360};
     int idx = 0;
-    int close = 0;
-    int too_close = 0;
 
     for (int i=0; i<7; ++i) {
         for (int j=0; j<7; ++j) {
@@ -150,21 +248,21 @@ int Depth::is_obstacle() {
                 if ((j>=1) && (j<=5)) {
                     idx = (100*j+1) + ((vertical_index_arr[i]-1)*639);
                 }
-            } 
+            }    
             else {
                 idx = (100*j+1) * vertical_index_arr[i];
             }
 
-            // 1: need to avoid   2: danger
-            if (depth_array_[idx] < 0.1) {
+            // 0: you can go   1: need to avoid   2: danger
+            if (depth_array_[idx] < 0.3) {
                 return 1;
             }
             else if (depth_array_[idx] < 1) {
                 return 2;
             }
+            else {
+                return 0;
+            }
         }
     }
-}
-
-void Depth::permission_to_go() {
 }

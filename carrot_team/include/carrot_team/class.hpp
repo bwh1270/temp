@@ -39,9 +39,11 @@ namespace AIMS {
     class Vehicle
     {
         private:
-        float current_position_[3];
+        float current_position_[3];    // x,y,z
+        float current_orientation_[4]; // x,y,z,w
         ros::Subscriber pos_sub_;
         ros::Publisher zyaw_pub_;
+        ros::Publisher xy_pub_;
 
         public:
         Vehicle(ros::NodeHandle *nh);
@@ -53,6 +55,18 @@ namespace AIMS {
         void set_zoffset_yaw(float *target_poi_yaw);
 
         void start_moving(bool *flag);
+        
+        void set_xyoffset(float *target_poi_yaw);
+
+        void hovering();
+
+        void go_left();
+
+        void go_right();
+
+        void go_back();
+
+        bool arrived(float *target_poi_yaw);
     };
 }
 
@@ -71,6 +85,6 @@ class Depth
 
     void depth_sub_callback(const std_msgs::Float64MultiArray::ConstPtr &msg);
 
-    int is_obstacle();
+    int does_obstacle_exist();
 };
 #endif

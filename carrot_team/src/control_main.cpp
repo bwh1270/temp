@@ -18,7 +18,7 @@ int main(int argc, char **argv)
     float current_position[3];  // x, y, z
     float target_poi_yaw[4];    // x, y, z, yaw
     bool willing_to_go = false; // flag which represents vehicle's just moving to target poi
-    int obs_flag = 0            // flag 0: can go   1: need to avoid    2: danger
+    int obstacle_flag;          // flag 0: can go   1: need to avoid    2: danger
 
     AIMS::Vehicle carrot_vehicle(&nh);)
     Target_POI target_poi(&nh);
@@ -38,11 +38,32 @@ int main(int argc, char **argv)
             carrot_vehicle.set_zoffset_yaw(target_poi_yaw);
             carrot_vehicle.start_moving(&willing_to_go);
 
-            // Do obstacle exist?
-            obs_flag = depth.is_obstacle();
+            // Now, vehicle starts moving
+            if (willing_to_go) {
+                while (1) {
+                    obstacle_flag = depth.does_obstacle_exist();
 
+                    if (obstacle_flag == 0) {
+                        carrot_vehicle.set_xyoffset();
+                    }
+                    else if (obstacle_flag == 1) {
+                        carrot_vehicle.hovering();
+                        carrot_vehicle.go_left();
+                    }
+                    else if (obstacle_flag == 2) {
+                        carrot_vehicle.hovering();
+                        carrot_vehicle.go_back();
+                    }
+
+                    // Vehicle is arrived at the target poi
+                    if (carrot_vehicle.arrived(target_poi_yaw)) {
+                        break;
+                    }
+                }
+                willing_to_go = false;
+            }
             where = false;
-        }
+        } 
         ros::spinOnce();
         rate.sleep();
     }
