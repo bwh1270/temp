@@ -219,7 +219,7 @@ bool AIMS::Vehicle::arrived(float *target_poi_yaw) {
         // publish (iter, accurate or near, poi(x,y,z))
         return true;
     }
-    else { return false }
+    else { return false; }
 }
 
 

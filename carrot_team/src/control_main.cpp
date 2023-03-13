@@ -44,7 +44,7 @@ int main(int argc, char **argv)
                     obstacle_flag = depth.does_obstacle_exist();
 
                     if (obstacle_flag == 0) {
-                        carrot_vehicle.set_xyoffset();
+                        carrot_vehicle.set_xyoffset(target_poi_yaw);
                     }
                     else if (obstacle_flag == 1) {
                         carrot_vehicle.hovering();

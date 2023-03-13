@@ -22,7 +22,7 @@
 #define KEYCODE_S 0x73
 #define KEYCODE_Q 0x71
 
-#define PI = 3.14159265358979323846;
+#define PI 3.14159265358979323846
 
 class KeyboardReader
 {
