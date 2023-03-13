@@ -6,7 +6,7 @@ import numpy as np
 import rospy
 from cv_bridge import CvBridge    # ros image -> opencv
 from sensor_msgs.msg import Image
-from std_msgs.msg import Float64MultiArray
+from std_msgs.msg import Float32MultiArray
 
 def depth_callback(msg):
     global cv_depth
@@ -14,7 +14,7 @@ def depth_callback(msg):
     assert cv_depth.size == (640*480)
     depth_1D = np.ravel(cv_depth)
     print(depth_1D)
-    array_msg = Float64MultiArray()
+    array_msg = Float32MultiArray()
     array_msg.data = list(depth_1D)
     depth_pub.publish(array_msg)
 
@@ -29,6 +29,6 @@ if __name__ == "__main__":
     cv_depth = np.empty(shape=[0]);
 
     rospy.init_node("get_img", anonymous=False)
-    depth_pub = rospy.Publisher("/carrot_team/depth_array", Float64MultiArray, queue_size = 10)
+    depth_pub = rospy.Publisher("/carrot_team/depth_array", Float32MultiArray, queue_size = 10)
     rospy.Subscriber("/red/camera/depth/image_raw", Image, depth_callback)
     rospy.spin()

@@ -14,19 +14,23 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "control_main");
     ros::NodeHandle nh;
 
-    bool where = true;
+    bool start = false;
     float current_position[3];  // x, y, z
     float target_poi_yaw[4];    // x, y, z, yaw
     bool willing_to_go = false; // flag which represents vehicle's just moving to target poi
     int obstacle_flag = 0;          // flag 0: can go   1: need to avoid    2: danger
 
-    AIMS::Vehicle carrot_vehicle = AIMS::Vehicle(&nh);
     Target_POI target_poi = Target_POI(&nh);
+    while (1) {
+        target_poi.start(&start);
+        if (start) { break; }
+    }
+    AIMS::Vehicle carrot_vehicle = AIMS::Vehicle(&nh);
     Depth depth = Depth(&nh);
     
     ros::Rate rate(1);
     while (ros::ok()) {
-        if (where) {
+        if (start) {
             // Request: I'm here, where to go?
             carrot_vehicle.get_current_pos(current_position);
 
@@ -62,7 +66,8 @@ int main(int argc, char **argv)
                 }
                 willing_to_go = false;
             }
-            where = false;
+            // temp stopper
+            start = false;
         } 
         ros::spinOnce();
         rate.sleep();

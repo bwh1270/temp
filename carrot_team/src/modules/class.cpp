@@ -5,7 +5,7 @@
 #include "carrot_team/poi.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "sensor_msgs/Image.h"
-#include "std_msgs/Float64MultiArray.h"
+#include "std_msgs/Float32MultiArray.h"
 
 #include "carrot_team/orientation.hpp"
 #include "carrot_team/class.hpp"
@@ -26,6 +26,14 @@ void Target_POI::poi_sub_callback(const carrot_team::poi::ConstPtr &msg) {
         point_of_interests_.poi[_i].x = msg->poi[_i].x;
         point_of_interests_.poi[_i].y = msg->poi[_i].y;
         point_of_interests_.poi[_i].z = msg->poi[_i].z;
+    } 
+    ROS_INFO("# of poi: [%d]", point_of_interests_.poi.size());
+    ROS_INFO("Successfully save poi");
+}
+
+void Target_POI::start(bool *flag) {
+    if (point_of_interests_.poi[0].x != 0) {
+        *flat = true;
     }
 }
 
@@ -74,6 +82,31 @@ void Target_POI::get_target_poi(float *target_poi_yaw) {
     }
 }
 
+void Target_POI::possible_points() {
+    float poi_x, poi_y, poi_z;
+    float c_theta = 3.14159265358979323846 / 4;
+    int z_offset[2] = {2, 4};
+    pp_.poi.resize(8*2);
+    int cnt = 0;
+
+    // 16 points
+    poi_x = point_of_interests_.poi[target_idx_].x;
+    poi_y = point_of_interests_.poi[target_idx_].y;
+    poi_z = point_of_interests_.poi[target_idx_].z;
+
+    for (int i=0; i<8; ++i) {
+        pp_.poi[cnt].x = poi_x + 2*cos(c_theta*i);
+        pp_.poi[cnt].y = poi_y + 2*sin(c_theta*i); 
+        for (int j=0; j<2; ++j) {
+            pp_.poi[cnt].z = poi_z + z_offset[j];
+            ++cnt;
+        }
+    }   
+}
+
+// 현재 위치 고려해서 possible_points 중에 가야할 순서 정해주는 함수
+
+// mapping 고려해서 possible_points 중에 가지 못하는 점 삭제하는 함수
 
 
 AIMS::Vehicle::Vehicle(ros::NodeHandle *nh) {
@@ -231,7 +264,7 @@ Depth::Depth(ros::NodeHandle *nh) {
     depth_sub_ = nh->subscribe("/red/camera/depth/image_raw", 1000, &Depth::depth_sub_callback, this);  
 }
 
-void Depth::depth_sub_callback(const std_msgs::Float64MultiArray::ConstPtr &msg) {
+void Depth::depth_sub_callback(const std_msgs::Float32MultiArray::ConstPtr &msg) {
     for (int i=0; i<depth_size_; ++i) {
         depth_array_[i] = msg->data[i];
     }

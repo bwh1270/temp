@@ -8,7 +8,7 @@
 #include "carrot_team/poi.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "sensor_msgs/Image.h"
-#include "std_msgs/Float64MultiArray.h"
+#include "std_msgs/Float32MultiArray.h"
 
 #include "carrot_team/orientation.hpp"
 
@@ -17,6 +17,7 @@ class Target_POI
     private:
     ros::Subscriber poi_sub_;
     carrot_team::poi point_of_interests_;
+    carrot_team::poi pp_;
 
     int target_idx_;
     float target_yaw_;
@@ -26,11 +27,15 @@ class Target_POI
 
     void poi_sub_callback(const carrot_team::poi::ConstPtr &msg);
 
+    void start(bool *flag);
+
     void calculate_range(float *temp_poi, float *current_pos, float *range, float *yaw);
 
     void find_min_range(float *current_pos);
 
     void get_target_poi(float *target_poi_yaw);
+
+    void possible_points();
 
 };
 
@@ -83,7 +88,7 @@ class Depth
     public:  
     Depth(ros::NodeHandle *nh);
 
-    void depth_sub_callback(const std_msgs::Float64MultiArray::ConstPtr &msg);
+    void depth_sub_callback(const std_msgs::Float32MultiArray::ConstPtr &msg);
 
     void does_obstacle_exist(int *obstacle_flag);
 };
