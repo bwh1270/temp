@@ -144,8 +144,11 @@ private:
 	ros::Publisher _trajectory_point_pub;
 };
 
-TeleopDrone::TeleopDrone() : _x(10.0), _y(2.0), _z(2.0), _angle.yaw(0), _angle.roll(0), _angle.pitch(0)
+TeleopDrone::TeleopDrone() : _x(10.0), _y(2.0), _z(2.0)
 {
+	_angle.yaw   = 0;
+	_angle.roll  = 0; 
+	_angle.pitch = 0;
 	_trajectory_point_pub = _nh.advertise<trajectory_msgs::MultiDOFJointTrajectoryPoint>("red/position_hold/trajectory", 1000);
 }
 

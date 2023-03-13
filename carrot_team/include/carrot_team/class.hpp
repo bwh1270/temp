@@ -48,7 +48,7 @@ namespace AIMS {
         public:
         Vehicle(ros::NodeHandle *nh);
 
-        void pos_sub_callback(const geometry_msgs::PoseStamped::ConstPtr &msg);
+        void pose_sub_callback(const geometry_msgs::PoseStamped::ConstPtr &msg);
 
         void get_current_pos(float *current_position);
 
