@@ -40,6 +40,7 @@ include_directories(
 
 add_executable(keyboard_control
         src/keyboard_control.cpp
+        src/modules/orientation.cpp
         )
 target_link_libraries(keyboard_control
         ${catkin_LIBRARIES}
