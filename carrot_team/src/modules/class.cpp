@@ -217,22 +217,26 @@ void AIMS::Vehicle::set_xyoffset() {
         xy_pose_msg.transforms[0].translation.x = past_x + front_vec_x;
         xy_pose_msg.transforms[0].translation.y = past_y + front_vec_y;
         xy_pub_.publish(xy_pose_msg);
-        if (abs(current_position_[0] - (past_x + front_vec_x))) {
+        if (abs(current_position_[0] - (past_x + front_vec_x) < 0.01)) {
             ROS_INFO("Setting x,y offset");
-	    break;
-	}
-	ros::spinOnce();
-	sleep(0.5);
+	        break;
+	    }      
+	    ros::spinOnce(); // current position is updating
+	    sleep(0.5);
     }
 }
 
 void AIMS::Vehicle::hovering() {
-    geometry_msgs::PoseStamped xyz_pose_msg;
-    xyz_pose_msg.pose.position.x = current_position_[0];
-    xyz_pose_msg.pose.position.y = current_position_[1];
-    xyz_pose_msg.pose.position.z = current_position_[2];
-    xy_pub_.publish(xyz_pose_msg);
-    ROS_INFO("hovering");
+    while (1) {
+        ros::spinOnce(); // current position is updated
+        trajectory_msgs::MultiDOFJointTrajectoryPoint xyz_pose_msg;
+        xyz_pose_msg.pose.position.x = current_position_[0];
+        xyz_pose_msg.pose.position.y = current_position_[1];
+        xyz_pose_msg.pose.position.z = current_position_[2];
+        xy_pub_.publish(xyz_pose_msg);
+        ROS_INFO("2sec hovering");
+        sleep(2);
+    }
 }
 
 void AIMS::Vehicle::go_left() {
@@ -249,11 +253,25 @@ void AIMS::Vehicle::go_left() {
     left_vec_x = cos(_angle.yaw) * 0 - sin(_angle.yaw) * 1;
     left_vec_y = sin(_angle.yaw) * 0 + cos(_angle.yaw) * 1;
 
-    geometry_msgs::PoseStamped xy_pose_msg;
-    xy_pose_msg.pose.position.x = current_position_[0] + left_vec_x;
-    xy_pose_msg.pose.position.y = current_position_[1] + left_vec_y;
-    xy_pub_.publish(xy_pose_msg);
-    ROS_INFO("go left");
+    float past_x = current_position_[0];
+    float past_y = current_position_[1];
+    while (1) { 
+	
+        trajectory_msgs::MultiDOFJointTrajectoryPoint xy_pose_msg;
+        xy_pose_msg.transforms.resize(1);
+        xy_pose_msg.velocities.resize(1);
+        xy_pose_msg.accelerations.resize(1);
+
+        xy_pose_msg.transforms[0].translation.x = past_x + left_vec_x;
+        xy_pose_msg.transforms[0].translation.y = past_y + left_vec_y;
+        xy_pub_.publish(xy_pose_msg);
+        if (abs(current_position_[0] - (past_x + left_vec_x) < 0.01)) {
+            ROS_INFO("go left");
+	        break;
+	    }      
+	    ros::spinOnce();
+	    sleep(0.5);
+    }
 }
 
 void AIMS::Vehicle::go_right() {
@@ -270,11 +288,25 @@ void AIMS::Vehicle::go_right() {
     right_vec_x = cos(_angle.yaw) * 0 - sin(_angle.yaw) * (-1);
     right_vec_y = sin(_angle.yaw) * 0 + cos(_angle.yaw) * (-1);
 
-    geometry_msgs::PoseStamped xy_pose_msg;
-    xy_pose_msg.pose.position.x = current_position_[0] + right_vec_x;
-    xy_pose_msg.pose.position.y = current_position_[1] + right_vec_y;
-    xy_pub_.publish(xy_pose_msg);
-    ROS_INFO("go right");
+    float past_x = current_position_[0];
+    float past_y = current_position_[1];
+    while (1) { 
+	
+        trajectory_msgs::MultiDOFJointTrajectoryPoint xy_pose_msg;
+        xy_pose_msg.transforms.resize(1);
+        xy_pose_msg.velocities.resize(1);
+        xy_pose_msg.accelerations.resize(1);
+
+        xy_pose_msg.transforms[0].translation.x = past_x + right_vec_x;
+        xy_pose_msg.transforms[0].translation.y = past_y + right_vec_y;
+        xy_pub_.publish(xy_pose_msg);
+        if (abs(current_position_[0] - (past_x + right_vec_x) < 0.01)) {
+            ROS_INFO("go right");
+	        break;
+	    }      
+	    ros::spinOnce();
+	    sleep(0.5);
+    }
 }
 
 void AIMS::Vehicle::go_back() {
@@ -302,10 +334,13 @@ bool AIMS::Vehicle::arrived(float *target_poi_yaw) {
     float delta_x, delta_y;
     delta_x = abs(current_position_[0] - target_poi_yaw[0]);
     delta_y = abs(current_position_[1] - target_poi_yaw[1]);
+    std::cout << "delta x: [" << delta_x << "]\n" <<
+                 "delta y: [" << delta_y << "]\n" 
 
     if ((delta_x < 0.01) && (delta_y < 0.01)) {
-        this->hovering();
-        // hovering();
+        this->hovering(); // or hovering();
+        // yawing 추가해야 함!
+        
         ROS_INFO("Vehicle is arrived at the target POI");
         // publish (iter, accurate or near, poi(x,y,z))
         return true;
