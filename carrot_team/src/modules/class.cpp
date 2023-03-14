@@ -58,7 +58,7 @@ void Target_POI::calculate_range(float *temp_poi, float *current_pos, float *ran
 
     float _c_vec_amount = sqrt(current_pos[0]**2 + current_pos[1]**2 + current_pos[2]**2);
     float _t_vec_amount = sqrt(temp_poi[0]**2 + temp_poi[1]**2 + temp_poi[2]**2);
-    float _dot_product = current_pos[0]*temp_poi[0] + current_pos[1]*temp_poi[1] + current_pos[2]*temp_poi[2]
+    float _dot_product = current_pos[0]*temp_poi[0] + current_pos[1]*temp_poi[1] + current_pos[2]*temp_poi[2];
     *yaw = acos(_dot_product / (_c_vec_amount * _t_vec_amount));
 }
 
