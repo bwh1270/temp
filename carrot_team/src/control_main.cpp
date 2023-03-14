@@ -60,10 +60,10 @@ int main(int argc, char **argv)
                     // obstacle_free()를 통해 flag가 false에서 true로 변환
                     obs_free = true;
                     if (obs_free) {
-                        carrot_vehicle.set_xyoffset(target_poi_yaw);
+                        carrot_vehicle.set_xyoffset();
                     }
 
-                    if (carrot_vehicle.arrived(target_poi_yaw) {
+                    if (carrot_vehicle.arrived(target_poi_yaw)) {
                         willing_to_go = false;
                         break;
                     }
