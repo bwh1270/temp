@@ -55,7 +55,11 @@ void Target_POI::calculate_range(float *temp_poi, float *current_pos, float *ran
     delta_y = current_pos[1] - temp_poi[1];
     delta_z = current_pos[2] - temp_poi[2];
     *range = (delta_x * delta_x) + (delta_y * delta_y) + (delta_z * delta_z);
-    *yaw = atan(delta_x / delta_y);
+
+    float _c_vec_amount = sqrt(current_pos[0]**2 + current_pos[1]**2 + current_pos[2]**2);
+    float _t_vec_amount = sqrt(temp_poi[0]**2 + temp_poi[1]**2 + temp_poi[2]**2);
+    float _dot_product = current_pos[0]*temp_poi[0] + current_pos[1]*temp_poi[1] + current_pos[2]*temp_poi[2]
+    *yaw = acos(_dot_product / (_c_vec_amount * _t_vec_amount));
 }
 
 void Target_POI::find_min_range(float *current_pos) {
@@ -167,8 +171,8 @@ void AIMS::Vehicle::set_zoffset_yaw(float *target_poi_yaw) {
         zyaw_pose_msg.transforms[0].rotation.y = q.y;
         zyaw_pose_msg.transforms[0].rotation.z = q.z;
         zyaw_pub_.publish(zyaw_pose_msg);
-        sleep(0.1); // second
-        if (abs(current_position_[2] - target_poi_yaw[2]) < 0.001) {
+        sleep(0.001); // second
+        if (abs(current_position_[2] - target_poi_yaw[2]) < 0.01) { // 0.001 scale에서는 일치하지 않음
             break;
         }
     }
