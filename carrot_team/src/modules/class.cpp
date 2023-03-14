@@ -155,6 +155,10 @@ void AIMS::Vehicle::set_zoffset_yaw(float *target_poi_yaw) {
     q = ToQuaternion(angle);
     while (1) {
         trajectory_msgs::MultiDOFJointTrajectoryPoint zyaw_pose_msg;
+		zyaw_pose_msg.transforms.resize(1);
+		zyaw_pose_msg.velocities.resize(1);
+		zyaw_pose_msg.accelerations.resize(1);
+
         zyaw_pose_msg.transforms[0].translation.x = current_position_[0];
         zyaw_pose_msg.transforms[0].translation.y = current_position_[1];
         zyaw_pose_msg.transforms[0].translation.z = target_poi_yaw[2];

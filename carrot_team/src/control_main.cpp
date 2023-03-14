@@ -30,6 +30,7 @@ int main(int argc, char **argv)
     }
     AIMS::Vehicle carrot_vehicle = AIMS::Vehicle(&nh);
     Depth depth = Depth(&nh);
+    for (int i=0; i<10; ++i) { ros::spinOnce(); _rate.sleep(); }
     
     ros::Rate rate(1);
     while (ros::ok()) {
