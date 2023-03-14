@@ -194,7 +194,7 @@ void AIMS::Vehicle::start_moving(bool *flag) {
 void AIMS::Vehicle::set_xyoffset() {
     Quaternion _q;
     EulerAngles _angle;
-    float front_vec_x; front_vec_y;
+    float front_vec_x, front_vec_y;
     _q.x = current_orientation_[0];
     _q.y = current_orientation_[1];
     _q.z = current_orientation_[2];
@@ -230,9 +230,13 @@ void AIMS::Vehicle::hovering() {
     while (1) {
         ros::spinOnce(); // current position is updated
         trajectory_msgs::MultiDOFJointTrajectoryPoint xyz_pose_msg;
-        xyz_pose_msg.pose.position.x = current_position_[0];
-        xyz_pose_msg.pose.position.y = current_position_[1];
-        xyz_pose_msg.pose.position.z = current_position_[2];
+        xyz_pose_msg.transforms.resize(1);
+        xyz_pose_msg.velocities.resize(1);
+        xyz_pose_msg.accelerations.resize(1);
+        
+	xyz_pose_msg.transforms[0].translation.x = current_position_[0];
+        xyz_pose_msg.transforms[0].translation.y = current_position_[1];
+        xyz_pose_msg.transforms[0].translation.z = current_position_[2];
         xy_pub_.publish(xyz_pose_msg);
         ROS_INFO("2sec hovering");
         sleep(2);
@@ -335,7 +339,7 @@ bool AIMS::Vehicle::arrived(float *target_poi_yaw) {
     delta_x = abs(current_position_[0] - target_poi_yaw[0]);
     delta_y = abs(current_position_[1] - target_poi_yaw[1]);
     std::cout << "delta x: [" << delta_x << "]\n" <<
-                 "delta y: [" << delta_y << "]\n" 
+                 "delta y: [" << delta_y << "]"   << std::endl;
 
     if ((delta_x < 0.01) && (delta_y < 0.01)) {
         this->hovering(); // or hovering();
@@ -357,8 +361,8 @@ Depth::Depth(ros::NodeHandle *nh) {
     height_ = 640;
     width_  = 480;
     depth_size_ = (640*480);
-    h_fov = 58; //radian
-    w_fov = 87; //radian
+    h_fov_ = 58; //radian
+    w_fov_ = 87; //radian
     for (int i=0; i<depth_size_; ++i) { depth_array_[i] = 0; }
     depth_sub_ = nh->subscribe("/carrot_team/depth_array", 1000, &Depth::depth_sub_callback, this);
     depth_calibration(); // if error, this->depth_calibration();  
@@ -414,12 +418,14 @@ void Depth::depth_calibration() {
 	if (temp_idx >= 0) { ++temp_idx; }
 	temp_cal = atan(temp_idx * tan(w_fov_ / 2) * w_half_inv);
 	w_cali_arr_[i] = temp_cal;
-
+    }
     for (int i=0; i<height_; ++i) {
 	temp_idx = h_half - i;
 	if (temp_idx <= 0) { --temp_idx; }
 	temp_cal = atan(temp_idx * tan(h_fov_ / 2) * h_half_inv);
 	h_cali_arr_[i] = temp_cal;
+    }
+}
 
 // How far from vehicle with depth_image's pixel
 void Depth::distance(float depth_value, int w_idx, int h_idx,
