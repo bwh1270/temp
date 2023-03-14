@@ -127,6 +127,8 @@ void AIMS::Vehicle::pose_sub_callback(const geometry_msgs::PoseStamped::ConstPtr
     current_orientation_[1] = msg->pose.orientation.y;
     current_orientation_[2] = msg->pose.orientation.z;
     current_orientation_[3] = msg->pose.orientation.w;
+    ROS_INFO("I want to know current position is always updating");
+    ROS_INFO("current position x: [%f]", current_position_[0]);
 }
 
 void AIMS::Vehicle::get_current_pos(float *current_position) {
