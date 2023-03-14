@@ -14,7 +14,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "control_main");
     ros::NodeHandle nh;
 
-    bool start = false;
+    bool next_poi = false;
     float current_position[3];  // x, y, z
     float target_poi_yaw[4];    // x, y, z, yaw
     bool willing_to_go = false; // flag which represents vehicle's just moving to target poi
@@ -23,8 +23,8 @@ int main(int argc, char **argv)
     Target_POI target_poi = Target_POI(&nh);
     ros::Rate _rate(1);
     while (ros::ok()) {
-        target_poi.start(&start);
-        if (start) { break; }
+        target_poi.start(&next_poi);
+        if (next_poi) { break; }
         ros::spinOnce();
         _rate.sleep();
     }
@@ -33,8 +33,10 @@ int main(int argc, char **argv)
     for (int i=0; i<10; ++i) { ros::spinOnce(); _rate.sleep(); }
     
     ros::Rate rate(1);
-    while (ros::ok()) {
-        if (start) {
+    while (ros::ok()) 
+    {
+        if (next_poi) 
+        {
             // Request: I'm here, where to go?
             carrot_vehicle.get_current_pos(current_position);
 
@@ -47,34 +49,32 @@ int main(int argc, char **argv)
             carrot_vehicle.start_moving(&willing_to_go);
 
             // Now, vehicle starts moving
-            if (willing_to_go) {
-                while (1) {
-                    depth.does_obstacle_exist(&obstacle_flag);
-
-                    if (obstacle_flag == 0) {
+            if (willing_to_go) 
+            {
+                bool obs_free = false;
+                while (1) 
+                {
+                    //depth.does_obstacle_exist(&obstacle_flag);
+                    
+                    // experiment-1: 첫 번째 poi까지 도달
+                    // obstacle_free()를 통해 flag가 false에서 true로 변환
+                    obs_free = true;
+                    if (obs_free) {
                         carrot_vehicle.set_xyoffset(target_poi_yaw);
                     }
-                    else if (obstacle_flag == 1) {
-                        carrot_vehicle.hovering();
-                        carrot_vehicle.go_left();
-                    }
-                    else if (obstacle_flag == 2) {
-                        carrot_vehicle.hovering();
-                        carrot_vehicle.go_back();
-                    }
 
-                    // Vehicle is arrived at the target poi
-                    if (carrot_vehicle.arrived(target_poi_yaw)) {
+                    if (carrot_vehicle.arrived(target_poi_yaw) {
+                        willing_to_go = false;
                         break;
                     }
                 }
-                willing_to_go = false;
+                // temp stopper
+                next_poi = false;
             }
-            // temp stopper
-            start = false;
-        } 
+
         ros::spinOnce();
         rate.sleep();
+        }
     }
     return 0;
 }
