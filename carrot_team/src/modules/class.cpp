@@ -125,6 +125,10 @@ void Target_POI::possible_points() {
 // mapping 고려해서 possible_points 중에 가지 못하는 점 삭제하는 함수
 
 
+
+
+
+
 AIMS::Vehicle::Vehicle(ros::NodeHandle *nh) {
     for (int i=0; i<3; ++i) { current_position_[i] = 0; }
     for (int i=0; i<4; ++i) { current_orientation_[i] = 0;}
@@ -159,9 +163,9 @@ void AIMS::Vehicle::set_zoffset_yaw(float *target_poi_yaw) {
     q = ToQuaternion(angle);
     while (1) {
         trajectory_msgs::MultiDOFJointTrajectoryPoint zyaw_pose_msg;
-		zyaw_pose_msg.transforms.resize(1);
-		zyaw_pose_msg.velocities.resize(1);
-		zyaw_pose_msg.accelerations.resize(1);
+	zyaw_pose_msg.transforms.resize(1);
+	zyaw_pose_msg.velocities.resize(1);
+	zyaw_pose_msg.accelerations.resize(1);
 
         zyaw_pose_msg.transforms[0].translation.x = current_position_[0];
         zyaw_pose_msg.transforms[0].translation.y = current_position_[1];
@@ -183,14 +187,41 @@ void AIMS::Vehicle::start_moving(bool *flag) {
     *flag = true;
 }
 
-void AIMS::Vehicle::set_xyoffset(float *target_poi_yaw) {
 
-    geometry_msgs::PoseStamped xy_pose_msg;
-    xy_pose_msg.pose.position.x = target_poi_yaw[0];
-    xy_pose_msg.pose.position.x = target_poi_yaw[1];
-    xy_pose_msg.pose.position.x = target_poi_yaw[2];
-    xy_pub_.publish(xy_pose_msg);
-    ROS_INFO("Setting x,y offset");
+// When obstacle free flag: false -> true, run!  Caution: current_position is needed to updating!
+void AIMS::Vehicle::set_xyoffset() {
+    Quaternion _q;
+    EulerAngles _angle;
+    float front_vec_x; front_vec_y;
+    _q.x = current_orientation_[0];
+    _q.y = current_orientation_[1];
+    _q.z = current_orientation_[2];
+    _q.w = current_orientation_[3];
+    
+    // move front about 1m w.r.t body frame
+    _angle = ToEulerAngles(_q);
+    front_vec_x = cos(_angle.yaw) * 1 + sin(_angle.yaw) * 0;
+    front_vec_y = sin(_angle.yaw) * 1 + cos(_angle.yaw) * 0;
+    
+    float past_x = current_position_[0];
+    float past_y = current_position_[1];
+    while (1) { 
+	
+        trajectory_msgs::MultiDOFJointTrajectoryPoint xy_pose_msg;
+        xy_pose_msg.transforms.resize(1);
+        xy_pose_msg.velocities.resize(1);
+        xy_pose_msg.accelerations.resize(1);
+
+        xy_pose_msg.transforms[0].translation.x = past_x + front_vec_x;
+        xy_pose_msg.transforms[0].translation.y = past_y + front_vec_y;
+        xy_pub_.publish(xy_pose_msg);
+        if (abs(current_position_[0] - (past_x + front_vec_x))) {
+            ROS_INFO("Setting x,y offset");
+	    break;
+	}
+	ros::spinOnce();
+	sleep(0.5);
+    }
 }
 
 void AIMS::Vehicle::hovering() {
@@ -281,12 +312,19 @@ bool AIMS::Vehicle::arrived(float *target_poi_yaw) {
 }
 
 
+
+
+
+
 Depth::Depth(ros::NodeHandle *nh) {
     height_ = 640;
     width_  = 480;
     depth_size_ = (640*480);
+    h_fov = 58; //radian
+    w_fov = 87; //radian
     for (int i=0; i<depth_size_; ++i) { depth_array_[i] = 0; }
-    depth_sub_ = nh->subscribe("/carrot_team/depth_array", 1000, &Depth::depth_sub_callback, this);  
+    depth_sub_ = nh->subscribe("/carrot_team/depth_array", 1000, &Depth::depth_sub_callback, this);
+    depth_calibration(); // if error, this->depth_calibration();  
 }
 
 void Depth::depth_sub_callback(const std_msgs::Float32MultiArray::ConstPtr &msg) {
@@ -324,3 +362,43 @@ void Depth::does_obstacle_exist(int *obstacle_flag) {
         }
     }
 }
+
+// Just Call Once
+void Depth::depth_calibration() {
+    int h_half     = height_ / 2;
+    int w_half     = width_  / 2;
+    int h_half_inv = 2 / height_;
+    int w_half_inv = 2 / width_;
+    int temp_idx   = 0;
+    float temp_cal = 0;
+
+    for (int i=0; i<width_; ++i) {
+	temp_idx = i - w_half;
+	if (temp_idx >= 0) { ++temp_idx; }
+	temp_cal = atan(temp_idx * tan(w_fov_ / 2) * w_half_inv);
+	w_cali_arr_[i] = temp_cal;
+
+    for (int i=0; i<height_; ++i) {
+	temp_idx = h_half - i;
+	if (temp_idx <= 0) { --temp_idx; }
+	temp_cal = atan(temp_idx * tan(h_fov_ / 2) * h_half_inv);
+	h_cali_arr_[i] = temp_cal;
+
+// How far from vehicle with depth_image's pixel
+void Depth::distance(float depth_value, int w_idx, int h_idx,
+	             float distance_x, float distance_y, float distance_z) {
+	float d_x, d_y, d_z; // At body frame, distance
+	d_x = depth_value * tan(w_cali_arr_[w_idx]);
+	d_y = depth_value;
+	d_z = depth_value * tan(w_cali_arr_[h_idx]);
+}
+
+
+
+
+
+
+
+
+
+

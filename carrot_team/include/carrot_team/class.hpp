@@ -61,7 +61,7 @@ namespace AIMS {
 
         void start_moving(bool *flag);
         
-        void set_xyoffset(float *target_poi_yaw);
+        void set_xyoffset();
 
         void hovering();
 
@@ -82,6 +82,9 @@ class Depth
     uint height_;
     uint width_;
     uint depth_size_;
+    uint h_fov_;
+    uint w_fov_;
+    float h_cali_arr_[640], w_cali_arr_[480];
     double depth_array_[640*480];
     ros::Subscriber depth_sub_;
     
@@ -91,5 +94,9 @@ class Depth
     void depth_sub_callback(const std_msgs::Float32MultiArray::ConstPtr &msg);
 
     void does_obstacle_exist(int *obstacle_flag);
+   
+    void depth_calibration();
+
+    void distance(float depth_value, int w_idx, int h_idx, float distance_x, float distance_y, float distance_z); 
 };
 #endif
