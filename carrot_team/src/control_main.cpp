@@ -21,9 +21,12 @@ int main(int argc, char **argv)
     int obstacle_flag = 0;          // flag 0: can go   1: need to avoid    2: danger
 
     Target_POI target_poi = Target_POI(&nh);
-    while (1) {
+    ros::Rate _rate(1);
+    while (ros::ok()) {
         target_poi.start(&start);
         if (start) { break; }
+        ros::spinOnce();
+        _rate.sleep();
     }
     AIMS::Vehicle carrot_vehicle = AIMS::Vehicle(&nh);
     Depth depth = Depth(&nh);

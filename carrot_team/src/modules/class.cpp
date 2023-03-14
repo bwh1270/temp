@@ -1,12 +1,18 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
+#ifndef _WIN32
+#include <unistd.h>	 
+#else
+#include <windows.h>
+#endif
 
 #include "ros/ros.h"
 #include "carrot_team/poi.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "sensor_msgs/Image.h"
 #include "std_msgs/Float32MultiArray.h"
+#include "trajectory_msgs/MultiDOFJointTrajectoryPoint.h"
 
 #include "carrot_team/orientation.hpp"
 #include "carrot_team/class.hpp"
@@ -121,8 +127,8 @@ AIMS::Vehicle::Vehicle(ros::NodeHandle *nh) {
 
     pos_sub_ = nh->subscribe("/red/pose", 100, &AIMS::Vehicle::pose_sub_callback, this);
 
-    zyaw_pub_ = nh->advertise<geometry_msgs::PoseStamped>("/red/tracker/input_pose", 10);
-    xy_pub_   = nh->advertise<geometry_msgs::PoseStamped>("/red/tracker/input_pose", 10);
+    zyaw_pub_ = nh->advertise<trajectory_msgs::MultiDOFJointTrajectoryPoint>("/red/position_hold/trajectory", 100);
+    xy_pub_   = nh->advertise<trajectory_msgs::MultiDOFJointTrajectoryPoint>("/red/position_hold/trajectory", 100);
 }
 
 void AIMS::Vehicle::pose_sub_callback(const geometry_msgs::PoseStamped::ConstPtr &msg) {
@@ -147,16 +153,21 @@ void AIMS::Vehicle::set_zoffset_yaw(float *target_poi_yaw) {
     Quaternion q;
     angle.yaw = target_poi_yaw[3];
     q = ToQuaternion(angle);
-
-    geometry_msgs::PoseStamped zyaw_pose_msg;
-    zyaw_pose_msg.pose.position.x = current_position_[0];
-    zyaw_pose_msg.pose.position.y = current_position_[1];
-    zyaw_pose_msg.pose.position.z = target_poi_yaw[2];
-    zyaw_pose_msg.pose.orientation.w = q.w;
-    zyaw_pose_msg.pose.orientation.x = q.x;
-    zyaw_pose_msg.pose.orientation.y = q.y;
-    zyaw_pose_msg.pose.orientation.z = q.z;
-    zyaw_pub_.publish(zyaw_pose_msg);
+    while (1) {
+        trajectory_msgs::MultiDOFJointTrajectoryPoint zyaw_pose_msg;
+        zyaw_pose_msg.transforms[0].translation.x = current_position_[0];
+        zyaw_pose_msg.transforms[0].translation.y = current_position_[1];
+        zyaw_pose_msg.transforms[0].translation.z = target_poi_yaw[2];
+        zyaw_pose_msg.transforms[0].rotation.w = q.w;
+        zyaw_pose_msg.transforms[0].rotation.x = q.x;
+        zyaw_pose_msg.transforms[0].rotation.y = q.y;
+        zyaw_pose_msg.transforms[0].rotation.z = q.z;
+        zyaw_pub_.publish(zyaw_pose_msg);
+        sleep(0.1); // second
+        if (abs(current_position_[2] - target_poi_yaw[2]) < 0.001) {
+            break;
+        }
+    }
     ROS_INFO("Setting zoffset and yaw to target");
 }
 
@@ -267,7 +278,7 @@ Depth::Depth(ros::NodeHandle *nh) {
     width_  = 480;
     depth_size_ = (640*480);
     for (int i=0; i<depth_size_; ++i) { depth_array_[i] = 0; }
-    depth_sub_ = nh->subscribe("/red/camera/depth/image_raw", 1000, &Depth::depth_sub_callback, this);  
+    depth_sub_ = nh->subscribe("/carrot_team/depth_array", 1000, &Depth::depth_sub_callback, this);  
 }
 
 void Depth::depth_sub_callback(const std_msgs::Float32MultiArray::ConstPtr &msg) {
@@ -291,13 +302,13 @@ void Depth::does_obstacle_exist(int *obstacle_flag) {
             else {
                 idx = (100*j+1) * vertical_index_arr[i];
             }
-
+            
             // 0: you can go   1: need to avoid   2: danger
             if (depth_array_[idx] < 0.3) {
-                *obstacle_flag = 1;
+                *obstacle_flag = 2;
             }
             else if (depth_array_[idx] < 1) {
-                *obstacle_flag = 2;
+                *obstacle_flag = 1;
             }
             else {
                 *obstacle_flag = 0;
