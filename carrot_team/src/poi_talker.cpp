@@ -1,6 +1,8 @@
 #include "ros/ros.h"
 #include "carrot_team/poi.h"
 
+ros::Publisher poi_pub;
+
 void poi_sub_callback(const carrot_team::poi::ConstPtr &msg) {
     carrot_team::poi poi_arr;
     int poi_len = msg->poi.size();
@@ -22,7 +24,7 @@ int main(int argc, char **argv)
     ros::NodeHandle nh;
 
     bool should_latch = true;
-    ros::Publisher poi_pub = nh.advertise<carrot_team::poi>("/carrot_team/poi", 10, should_latch);
+    poi_pub = nh.advertise<carrot_team::poi>("/carrot_team/poi", 10, should_latch);
 
     ros::Subscriber poi_sub = nh.subscribe("/red/poi", 1000, &poi_sub_callback);
     ros::spin();

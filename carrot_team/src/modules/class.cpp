@@ -36,10 +36,10 @@ void Target_POI::poi_sub_callback(const carrot_team::poi::ConstPtr &msg) {
 void Target_POI::start(bool *flag) {
     if (point_of_interests_.poi[0].x != 0) {
         *flag = true;
-        std::out << "Successfully saving poi" << std::endl;
+        std::cout << "Successfully saving poi" << std::endl;
     }
     else {
-        std::out << "Still waiting for saving poi" << std::endl;
+        std::cout << "Still waiting for saving poi" << std::endl;
     }
 }
 
