@@ -1,3 +1,4 @@
+#include <iostream>
 #include <vector>
 #include <cmath>
 
@@ -13,6 +14,7 @@
 
 Target_POI::Target_POI(ros::NodeHandle *nh) {
     target_idx_ = -1;
+    point_of_interests_.poi.resize(10);
     poi_sub_ = nh->subscribe("/red/poi", 100, &Target_POI::poi_sub_callback, this);
 }
 
@@ -27,13 +29,17 @@ void Target_POI::poi_sub_callback(const carrot_team::poi::ConstPtr &msg) {
         point_of_interests_.poi[_i].y = msg->poi[_i].y;
         point_of_interests_.poi[_i].z = msg->poi[_i].z;
     } 
-    ROS_INFO("# of poi: [%d]", point_of_interests_.poi.size());
+    std::cout << "# of poi: " <<  point_of_interests_.poi.size() << std::endl;
     ROS_INFO("Successfully save poi");
 }
 
 void Target_POI::start(bool *flag) {
     if (point_of_interests_.poi[0].x != 0) {
-        *flat = true;
+        *flag = true;
+        std::out << "Successfully saving poi" << std::endl;
+    }
+    else {
+        std::out << "Still waiting for saving poi" << std::endl;
     }
 }
 

@@ -53,3 +53,9 @@ add_executable(control_main
 target_link_libraries(control_main
         ${catkin_LIBRARIES}
         )
+add_executable(poi_talker
+        src/poi_talker.cpp
+)
+target_link_libraries(poi_talker
+        ${catkin_LIBRARIES}
+)
