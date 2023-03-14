@@ -29,6 +29,6 @@ if __name__ == "__main__":
     cv_depth = np.empty(shape=[0]);
 
     rospy.init_node("get_img", anonymous=False)
-    depth_pub = rospy.Publisher("/carrot_team/depth_array", Float32MultiArray, queue_size = 10)
+    depth_pub = rospy.Publisher("/carrot_team/depth_array", Float32MultiArray, queue_size = 100)
     rospy.Subscriber("/red/camera/depth/image_raw", Image, depth_callback)
     rospy.spin()
