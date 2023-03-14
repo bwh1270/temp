@@ -15,7 +15,7 @@
 Target_POI::Target_POI(ros::NodeHandle *nh) {
     target_idx_ = -1;
     point_of_interests_.poi.resize(10);
-    poi_sub_ = nh->subscribe("/red/poi", 100, &Target_POI::poi_sub_callback, this);
+    poi_sub_ = nh->subscribe("/carrot_team/poi", 100, &Target_POI::poi_sub_callback, this);
 }
 
 void Target_POI::poi_sub_callback(const carrot_team::poi::ConstPtr &msg) {
